@@ -37,11 +37,15 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.archive.crawler.event.CrawlStateEvent;
+import org.archive.crawler.framework.CrawlController;
 import org.archive.io.ArchiveFileConstants;
 import org.archive.io.WriterPool;
 import org.archive.io.WriterPoolMember;
 import org.archive.util.ArchiveUtils;
 import org.archive.util.TimestampSerialno;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
 
 
 /**
@@ -401,11 +405,15 @@ public abstract class HDFSWriterPoolMember extends WriterPoolMember implements A
 
 	@Override
 	public void close() throws IOException {
-		if (this.sfWriter == null) {
+		LOGGER.info("Closing sequence file writer");
+
+        if (this.sfWriter == null) {
+            LOGGER.info("Unable to close sequence file writer, it is null.");
 			return;
 		}
 
-		this.sfWriter.close();
+        this.sfWriter.close();
+        LOGGER.info("Successfully closed sequence file writer, now renaming file...");
 
 		if (this.fpath != null && this.fs.exists(fpath)) {
 			String path = this.fpath.toString();
@@ -417,6 +425,7 @@ public abstract class HDFSWriterPoolMember extends WriterPoolMember implements A
 				if (!this.fs.rename(fpath, finalPath)) {
 					LOGGER.warning("Failed rename of " + path);
 				}
+                LOGGER.info("Successfully renamed " + fstr + " to final path " + finalPath);
 
 				this.fpath = new Path(fstr);
 			}

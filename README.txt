@@ -107,8 +107,30 @@ Finally, inject this bean into the DispositionChain:
 FILE FORMAT
 ===========
 
-The value portion of the SequenceFiles that are generated have the following
-format:
+Crawl results are stored in the SequenceFile format which is a series of 
+optionally compressed, key-value documents. Both the key and value of each document
+is type org.apache.hadoop.io.Text.
+
+Almost all of the time you're going to read these SequenceFiles as part of a map/reduce job,
+so it's strongly recommended that you use the HDFSWriterDocument class to read the
+value of each document in your map function like so:
+
+public void map(Text uri, Text docText, OutputCollector<Text, LongWritable> collector, Reporter reporter) throws IOException {
+
+    HDFSWriterDocument hdfsDoc = new HDFSWriterDocument();
+    hdfsDoc.readFields(new DataInputStream(new ByteArrayInputStream(docText.getBytes())));
+    
+    //access the document data using hdfsDoc
+    //here, we emit the charset and a value of 1 for present:
+    String charset = hdfsDoc.getCharset();
+    if (charset != null) {
+        collector.collect(new Text(charset), new LongWritable(1L));
+    }
+}
+
+ADVANCED INFORMATION
+Note again that HDFSWriterDocument handles reading the data from the low-level format so this may not be that
+useful, but we'll document it anyway in case you want to write a parser in another language:
 
   HDFSWriter/0.3
   <name-value-parameters>
@@ -155,6 +177,18 @@ Connection: close
 	<title>Link Spots CSI</title>
 	<script type="text/javascript">
 [...]
+
+The keys of the name-value-parameters can be controlled by setting the relevant
+property on the HDFSParameters bean in the spring configuration. For example:
+
+<bean id="hdfsParameters" class="org.archive.io.hdfs.HDFSParameters">
+    ... OTHER PROPERTIES ...
+
+    <!-- default is "Seed-Url", let's change it to "seedUrl" -->
+    <property name="seedUrlFieldName" value="seedUrl"/>
+</bean>
+
+The default names can be found by inspecting the HDFSParameters source.
 
 
 COMPILING THE SOURCE

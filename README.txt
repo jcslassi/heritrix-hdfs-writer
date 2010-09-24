@@ -1,9 +1,4 @@
-
-heritrix-hadoop-dfs-writer-processor-2.0.1
-
-Created on January 20th, 2007
-
-Copyright (C) 2008 Zvents
+HDFS (Hadoop Distributed FileSystem) Writer for Heritrix 3
 
 This file is part of the Heritrix web crawler (crawler.archive.org).
 
@@ -21,11 +16,10 @@ You should have received a copy of the GNU Lesser Public License
 along with Heritrix; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
-Doug Judd
-Zvents, Inc.
-doug zvents.com
-
+Contributors:
+Doug Judd Zvents, Inc. doug at zvents.com
+Greg Lu OpenPlaces.Org greg.lu at gmail.com
+Zach Bailey Dataclip.com znbailey at gmail.com
 
 TABLE OF CONTENTS
 =================
@@ -46,8 +40,8 @@ format which is directly supported by the Map/Reduce framework and has support
 for compression.  This facilitates running high-speed, distributed computations
 over content crawled with Heritrix.
 
-The current version of heritrix-hadoop-dfs-writer-processor assumes version
-2.0 of Heritrix and version 0.16.4 of Hadoop.  Newer versions of Hadoop
+This version of heritrix-hadoop-dfs-writer-processor assumes version
+3.0 of Heritrix and version 0.20.1+ of Hadoop.  Newer versions of Hadoop
 and Heritrix may continue to work with this connector as long as the pertinent
 APIs have not changed.  Just replace the jar files with the newer versions.
 
@@ -55,51 +49,60 @@ APIs have not changed.  Just replace the jar files with the newer versions.
 SETUP
 =====
 
-1. Start an instance of hadoop-0.16.4
-2. Install heritrix-2.0
+1. Start hadoop/hdfs
+2. Install heritrix
 3. Untar the current distribution to any directory and once its untarred enter the
-   <HDFSWriterProcessor_home> directory and enter ant jar.
+   <HDFSWriterProcessor_home> directory and run "ant jar".
 4. Copy the following jar files from the heritrix-hadoop-dfs-writer-processor binary
    distribution into the lib/ directory of your Heritrix installation:
-	 a) heritrix-hadoop-dfs-writer-processor-2.0.1.jar
-  	 b) hadoop-0.16.4-core.jar
-     c) log4j-1.2.13.jar (from the hadoop distribution)
-5. Copy all the subdirectories from within <HDFSWriterProcessor_home>/sample_profiles
-   to <Heritrix-2.0>/jobs.
-6. Start Heritrix
-
+	 a) heritrix-hadoop-dfs-writer-processor-*.jar
+  	 b) hadoop-*-core.jar
+     c) log4j-*.jar
+5. Start Heritrix
 
 CONFIGURING HERITRIX
 ====================
 
-- On the Web-UI click on Engine ID which will open up the List of Profiles.
-- From the Profiles, select Hbase_outlinks or Hbase_no_outlinks and copy to a ready to run job.
-- Once the job is copied navigate to "Edit-Sheet" by clicking on sheets-->edit
-- In the sheet edit page, select HDFSWriterProcessor as the selected Archiver.
-  (NOTE: from the drop-down menu..)
-- Now in the same page fill the following fields,
+Heritrix 3 now uses a spring configuration format for configuring the processor beans. This quick section assumes
+you're familiar with the basics of Spring and its XML configuration facilities.
 
+First, declare your HDFSParameters bean:
 
-	-hdfs-fs-default-name
-	  This should be set to the same string as the fs.default.name parameter in the
-	   hadoop-site.xml file
-	
-	-hdfs-output-path
-	  This is the base directory into which the crawled documents will get written.
-	  A subdirectory that has the same name as the one that is created in the
-	  heritrix/jobs directory will get created here.  Inside this subdirectory, the
-	  SequenceFiles will get written.
-	
-	-hdfs-compression-type
-	  This is the type of compression to use in the Sequence files.  The possible
-	  values are DEFAULT, BLOCK, RECORD, and NONE.
-	
-	-hdfs-replication
-	  This is the replication factor for files written into HDFS
-	  (NOTE: this currently has no effect, see JIRA bug HADOOP-907)
+<bean id="hdfsParameters" class="org.archive.io.hdfs.HDFSParameters">
+  <!-- each file written is prefixed with this string (required) -->
+  <property name="prefix" value="CrawlData"/>
 
-- Click on save changes and commit and launchthe job.
+  <!-- URL for the HDFS name node, not required, default is hdfs://localhost:9000 -->
+  <property name="hdfsFsDefaultName" value="hdfs://localhost:9000" />
+  
+  <!-- where to write the files to, not required, default is "/crawl" -->
+  <property name="hdfsOutputPath" value="/crawl/" />
 
+  <!-- 
+     one of "NONE", "RECORD", "BLOCK", "DEFAULT" (delegates to HDFS sequence file configuration) 
+     see org.apache.hadoop.io.SequenceFile.CompressionType
+  -->
+  <property name="hdfsCompressionType" value="NONE" />
+
+</bean>
+
+Then, declare the processor bean itself:
+
+<bean id="hdfsWriterProcessor" class="org.archive.modules.writer.HDFSWriterProcessor">
+   <property name="hdfsParameters" ref="hdfsParameters"/>
+</bean>
+
+Finally, inject this bean into the DispositionChain:
+
+<bean id="dispositionProcessors" class="org.archive.modules.DispositionChain">
+  <property name="processors">
+   <list>
+    <ref bean="hdfsWriterProcessor"/>
+        
+    ... MORE BEANS HERE ...
+   </list>
+  </property>
+</bean>
 
 FILE FORMAT
 ===========
@@ -107,7 +110,7 @@ FILE FORMAT
 The value portion of the SequenceFiles that are generated have the following
 format:
 
-  HDFSWriter/0.1
+  HDFSWriter/0.3
   <name-value-parameters>
   CRLF
   <http-request> (only for http scheme)
@@ -118,7 +121,7 @@ format:
 
 The following example, illustrates the format:
 
-HDFSWriter/0.1
+HDFSWriter/0.3
 URL: http://www.cnn.com/.element/ssi/www/sect/1.3/misc/contextual/MAIN.html
 Ip-Address: 64.236.29.120
 Crawl-Time: 20070123093916
@@ -157,41 +160,33 @@ Connection: close
 COMPILING THE SOURCE
 ====================
 
-Run the following commands:
-
-tar xzvf heritrix-hadoop-dfs-writer-processor-2.0.1.tar.gz
-cd heritrix-hadoop-dfs-writer-processor-2.0.1
-ant jar
-
-The jar file will end up in the build/ subdirectory.  To see the new HDFS
-writer processor in eclipse, you need to add the
-heritrix-hadoop-dfs-writer-processor-2.0.1.jar in the 'Java build path -> Libraries'
- panel.
+1.) Fork the git repo
+2.) Clone the git repo to your local machine
+3.) run "ant jar" from the project root
 
 
 RUNNING AN EXAMPLE MAP-REDUCE PROGRAM
 =====================================
 
 The binary and source distributions come with an example map-reduce program
-called org.archive.crawler.examples.mapred.CoutCharsets that produces counts
+called com.example.mapred.CountCharsets that produces counts
 for all of the unique character encodings (charsets) encountered in your
 crawled documents.  The source code for this example can be found in the file
-src/java/org/archive/crawler/examples/mapred/CountCharsets.java in the
-source distribution.
+src/java/com/example/mapred/CountCharsets.java in the source distribution.
 
 To run this example program, do the following.
 
-1. Copy the heritrix-hadoop-dfs-writer-processor-2.0.1.jar file into the lib/
-   directory of your hadoop-0.12.2 installation.  (NOTE: You should
+1. Copy the heritrix-hadoop-dfs-writer-processor-*.jar file into the lib/
+   directory of your hadoop installation.  (NOTE: You should
    push this jar file into the lib directory of all participating
    Hadoop nodes)
-2. cd into the hadoop-0.12.2 directory
+2. cd into the hadoop directory
 3. Invoke the map-reduce jobs with a line like the following:
 
-$ ./bin/hadoop org.archive.crawler.examples.mapred.CountCharsets /output \
-      /heritrix/crawls/no-extract-5-20070130081658484
+$ ./bin/hadoop org.archive.crawler.examples.mapred.CountCharsets \
+      /heritrix/crawls/no-extract-5-20070130081658484 /output
 
-(Be sure to change the final agument in the above line to your Heritrix
+(Be sure to change the second argument in the above line to your Heritrix
  output directory)
 
 This should generate a file in HDFS called /output/part-00000 that contains a
@@ -199,38 +194,4 @@ number of lines, one for each unique character set encountered, containing the
 name of the character set followed a count.  To see the result, run the
 following commands.
 
-$ ./bin/hadoop dfs -copyToLocal /output/part-00000
-$ cat part-00000
-
-
-HELPFUL HINTS
-=============
-
-1. To prevent the crawler from crawling media files, do the following
-
-   On the Submodules page, under pre-fetch-processors -> preselector -> decide-rules,
-   add the following two decide rules:
-
-     - acceptByDefault - The AcceptDecideRule that accepts everything by default
-     - dropMedia - MatchesFilePatternDecideRule - this will drop media files
-
-   On the Settings page under pre-fetch-processors -> Preselector -> filters ...
-   dropMedia setting, set the decision to REJECT and the use-preset-pattern to All
-
-   NOTE: by putting this filter in the pre-fetch-processor, it will get applied to
-   the seeds as well.  If you don't want it applied to the seeds, add the filter
-   to the crawl-scope module.
-
-2. To prevent the crawler from writing dns, robots.txt, .css, and .js files to
-   the content store, do the following
-
-   On the Submodules page, under write-processors -> HDFSArchiver -> decide-rules,
-   add an AcceptDecideRule (called acceptByDefault) and a MatchesFilePatternDecideRule
-   (called dropMeta).
-
-   On the Settings page under the write-processors -> HDFSArchiver section,
-   modify the decide-rules -> rules -> dropMeta rule setting as follows:
-
-     - set the decision to REJECT
-     - set the use-preset-pattern to Custom
-     - set the regexp to ^((dns:.*)|(.*(robots.txt|css|js)$))
+$ ./bin/hadoop fs -text /output/part-00000

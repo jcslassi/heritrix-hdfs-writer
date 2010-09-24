@@ -106,10 +106,7 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="jar" depends="compile">
-    <jar jarfile="${build.dir}/${final.name}.jar"
-            basedir="${build.classes}">
-      <fileset dir="src/conf"/>
-    </jar>
+    <jar jarfile="${build.dir}/${final.name}.jar" basedir="${build.classes}"/>
   </target>
 
   <!-- ================================================================== -->

@@ -6,7 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.context.ApplicationListener;
 import org.apache.log4j.Logger;
+import org.archive.crawler.event.CrawlStateEvent;
+import org.archive.crawler.framework.CrawlController;
 import org.archive.io.ReplayInputStream;
 import org.archive.io.WriterPoolMember;
 import org.archive.io.hdfs.HDFSParameters;
@@ -17,6 +20,7 @@ import org.archive.modules.ProcessResult;
 import org.archive.net.UURI;
 import org.archive.util.ArchiveUtils;
 import org.archive.util.anvl.ANVLRecord;
+import org.springframework.context.ApplicationEvent;
 
 
 /**
@@ -32,9 +36,7 @@ import org.archive.util.anvl.ANVLRecord;
  * </bean>
  *
  * <bean id="hdfsWriterProcessor" class="org.archive.modules.writer.HDFSWriterProcessor">
- *   <property name="hdfsParameters">
- *     <bean ref="hdfsParameters" />
- *   </property>
+ *   <property name="hdfsParameters" ref="hdfsParameters"/>
  * </bean>
  *
  * <bean id="dispositionProcessors" class="org.archive.modules.DispositionChain">
@@ -54,7 +56,7 @@ import org.archive.util.anvl.ANVLRecord;
  *
  * @author greg
  */
-public class HDFSWriterProcessor extends WriterPoolProcessor {
+public class HDFSWriterProcessor extends WriterPoolProcessor implements ApplicationListener {
 
 	private final Logger LOG = Logger.getLogger(this.getClass().getName());
 
@@ -252,5 +254,18 @@ public class HDFSWriterProcessor extends WriterPoolProcessor {
 
 		return checkBytesWritten();
 	}
+
+    public void onApplicationEvent(ApplicationEvent applicationEvent) {
+        if ( LOG.isDebugEnabled() ) LOG.debug("Received application event: " + applicationEvent);
+
+        if ( applicationEvent instanceof CrawlStateEvent ) {
+            CrawlStateEvent crawlEvent = (CrawlStateEvent) applicationEvent;
+            if ( LOG.isInfoEnabled() ) LOG.info("Handling crawl state event: " + crawlEvent);
+            if ( crawlEvent.getState() == CrawlController.State.STOPPING ) {
+                LOG.info("Received crawl state = STOPPING. Shutting down pool...");
+                getPool().close();
+            }
+        }
+    }
 
 }

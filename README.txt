@@ -217,11 +217,11 @@ To run this example program, do the following.
 2. cd into the hadoop directory
 3. Invoke the map-reduce jobs with a line like the following:
 
-$ ./bin/hadoop org.archive.crawler.examples.mapred.CountCharsets \
+$ ./bin/hadoop com.example.mapred.CountCharsets \
       /heritrix/crawls/no-extract-5-20070130081658484 /output
 
-(Be sure to change the second argument in the above line to your Heritrix
- output directory)
+(Be sure to change the second argument in the above line to where you told Heritrix
+to write the crawl data)
 
 This should generate a file in HDFS called /output/part-00000 that contains a
 number of lines, one for each unique character set encountered, containing the

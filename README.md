@@ -5,7 +5,6 @@ Contributors:
 
 *  Doug Judd Zvents, Inc. doug at zvents.com
 
-
 *  Greg Lu OpenPlaces.Org greg.lu at gmail.com
 
 *  Zach Bailey Dataclip.com znbailey at gmail.com

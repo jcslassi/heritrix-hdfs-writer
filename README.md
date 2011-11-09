@@ -2,9 +2,14 @@ HDFS (Hadoop Distributed FileSystem) Writer for Heritrix 3.1
 ============================================================
 
 Contributors:
+
 *  Doug Judd Zvents, Inc. doug at zvents.com
+
+
 *  Greg Lu OpenPlaces.Org greg.lu at gmail.com
+
 *  Zach Bailey Dataclip.com znbailey at gmail.com
+
 *  Christopher Miles, twitch@nervestaple.com
 
 The heritrix-hadoop-dfs-writer-processor is an extension to the Heritrix open

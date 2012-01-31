@@ -322,8 +322,8 @@ public class HDFSWriterPoolMember extends WriterPoolMember implements ArchiveFil
     }
 
     /**
-     * Postion in current physical file.
-     * Used making accounting of bytes written.
+     * Postion in current physical file.  Used for making accounting
+     * of bytes written.
      * @return Position in underlying file.  Call before or after writing
      * records *only* to be safe.
      * @throws IOException
@@ -336,15 +336,20 @@ public class HDFSWriterPoolMember extends WriterPoolMember implements ArchiveFil
 
             try {
 
-                // Call flush on underlying file though probably not needed assuming
-                // above this.out.flush called through to this.fos.
+                // Call flush on underlying file though probably not
+                // needed assuming above this.out.flush called through
+                // to this.fos.
                 sfWriter.syncFs();
 
                 position = this.sfWriter.getLength() + accumOffset;
             } catch(IOException exception) {
 
                 // log a warning, this is not supposed to happen
-                LOGGER.warning("Failed to read the length of the current SequenceFile");
+                LOGGER.warning("Failed to read the length of the current " +
+                               "SequenceFile");
+
+                // create a new file to handle our data
+                createFile();
             }
         }
 

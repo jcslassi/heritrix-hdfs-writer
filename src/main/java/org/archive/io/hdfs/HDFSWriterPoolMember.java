@@ -346,10 +346,16 @@ public class HDFSWriterPoolMember extends WriterPoolMember implements ArchiveFil
 
                 // log a warning, this is not supposed to happen
                 LOGGER.warning("Failed to read the length of the current " +
-                               "SequenceFile");
+                               "SequenceFile, opening a new file.");
 
-                // create a new file to handle our data
-                createFile();
+		try {
+
+		    // create a new file to handle our data
+		    createFile();
+		} catch(IOException exceptionCreate) {
+
+		    LOGGER.warning("Unable to open new SequenceFile");
+		}
             }
         }
 

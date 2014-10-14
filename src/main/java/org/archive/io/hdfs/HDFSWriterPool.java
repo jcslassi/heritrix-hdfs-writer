@@ -70,7 +70,8 @@ public class HDFSWriterPool extends WriterPool {
             member = writerFactory.makeObject();
         } catch(Exception exception) {
 
-            logger.warn("Couldn't create new HDFS writer");
+            logger.warn("Couldn't create new HDFS writer: -");
+            logger.warn(exception);
         }
 
         return(member);
